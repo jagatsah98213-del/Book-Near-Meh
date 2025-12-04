@@ -40,9 +40,10 @@ input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:none
 .menu{position:absolute; right:0; top:48px; background:var(--panel); border-radius:10px; padding:8px; min-width:240px; box-shadow:0 8px 24px rgba(2,6,23,0.5);}
 .menu button{display:block;width:100%;text-align:left;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--text);cursor:pointer;}
 label.switch{display:inline-flex; gap:8px; align-items:center;}
-.tab-panel{display:none; background:rgba(255,255,255,0.06); backdrop-filter: blur(14px); padding:16px; border-radius:14px; margin-top:12px;}
-.tab-panel.active{display:block;}
-.processing{margin-top:8px;font-size:13px;color:var(--accent-end);}
+.post-card { display:none; padding:14px; border-radius:14px; backdrop-filter:blur(12px); background:rgba(255,255,255,0.06); margin-top:12px;}
+.footer-note{font-size:12px;color:var(--muted);margin-top:6px;}
+#processingBar{height:6px; border-radius:4px; background:rgba(255,255,255,0.08); margin-top:6px; overflow:hidden;}
+#processingBarInner{height:100%; width:0%; background:linear-gradient(90deg,var(--accent-start),var(--accent-end)); transition:width 0.3s;}
 @media(max-width:980px){main{grid-template-columns:1fr; padding:12px} #map{height:60vh}}
 </style>
 </head>
@@ -70,13 +71,12 @@ label.switch{display:inline-flex; gap:8px; align-items:center;}
 
 <main>
   <aside class="panel" id="leftPanel">
-    <div style="font-weight:600; margin-bottom:8px;">Seller / Buyer Actions</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <div style="font-weight:600">Books Management</div>
+      <button class="btn primary" id="postBookTabBtn">📚 Post Your Book</button>
+    </div>
 
-    <button class="btn primary" id="postTabBtn">Post Your Book</button>
-    <button class="btn" id="filterTabBtn">Filter Books</button>
-
-    <!-- POST YOUR BOOK TAB -->
-    <div class="tab-panel" id="postTab">
+    <div class="post-card" id="postBookTab">
       <div class="field">
         <select id="bookType">
           <option value="individual">Individual Book</option>
@@ -89,23 +89,24 @@ label.switch{display:inline-flex; gap:8px; align-items:center;}
       <div class="field"><input id="emailIn" placeholder="Email (optional)" type="text"></div>
       <div class="field"><select id="categoryIn"><option>Fiction</option><option>Non-Fiction</option><option>Education</option><option>Technology</option><option>Kids</option></select></div>
       <div class="field"><input id="imageIn" type="file" accept="image/*"></div>
-      <div class="field"><button class="btn primary" id="postBookBtn">Post Book</button></div>
-      <div class="processing" id="processingText">Processing: 0%</div>
-      <div class="footer-note">Your book info will go for review. Data is safe.</div>
-    </div>
-
-    <!-- FILTER BOOKS TAB -->
-    <div class="tab-panel" id="filterTab">
-      <div style="display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:6px;">
-        <div style="font-weight:600">Available Books</div>
-        <select id="sortSelect" class="btn" style="background:transparent; padding:8px 10px;">
-          <option value="recent">Newest</option>
-          <option value="nearest">Nearest</option>
-        </select>
+      <div class="field">
+        <button class="btn primary" id="postBookBtn">Submit Book</button>
+        <div id="processingBar"><div id="processingBarInner"></div></div>
       </div>
-      <div id="booksList"></div>
+      <div class="footer-note">Your book info will go for review. Images compressed automatically. You will be redirected to WhatsApp.</div>
     </div>
 
+    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04); margin:14px 0;">
+
+    <!-- Filter Section -->
+    <div style="display:flex; gap:8px; align-items:center; justify-content:space-between;">
+      <div style="font-weight:600">Available Books</div>
+      <select id="sortSelect" class="btn" style="background:transparent; padding:8px 10px;">
+        <option value="recent">Newest</option>
+        <option value="nearest">Nearest</option>
+      </select>
+    </div>
+    <div id="booksList" style="margin-top:12px;"></div>
   </aside>
 
   <section>
@@ -131,8 +132,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
+const booksCol = db.collection('books');
 
-// THEME TOGGLE
+// THEME
 const modeToggle = document.getElementById('modeToggle');
 const modeLabel = document.getElementById('modeLabel');
 function applyTheme(theme){
@@ -142,14 +144,6 @@ function applyTheme(theme){
 }
 modeToggle.addEventListener('change',()=>applyTheme(modeToggle.checked?'light':'dark'));
 applyTheme(localStorage.getItem('bm_theme')||'dark');
-
-// TAB SWITCH
-const postTabBtn = document.getElementById('postTabBtn');
-const filterTabBtn = document.getElementById('filterTabBtn');
-const postTab = document.getElementById('postTab');
-const filterTab = document.getElementById('filterTab');
-postTabBtn.addEventListener('click',()=>{ postTab.classList.add('active'); filterTab.classList.remove('active'); });
-filterTabBtn.addEventListener('click',()=>{ filterTab.classList.add('active'); postTab.classList.remove('active'); });
 
 // MAP INIT
 let map = L.map('map').setView([26, 84],6);
@@ -168,141 +162,148 @@ document.getElementById('myLocationBtn').addEventListener('click',()=>{
 
 // SUBSCRIBE BUTTON
 document.getElementById('subscribeBtn').addEventListener('click',()=>window.open("https://www.youtube.com/@nsjagat-c?sub_confirmation=1","_blank"));
-                                                                                 </script>
-                                                                                 <script>
-// FIREBASE COLLECTION
-const booksCol = db.collection('books');
 
-// LOCAL STORAGE KEY FOR SELLER
-const sellerKey = localStorage.getItem('sellerKey') || Date.now().toString();
-localStorage.setItem('sellerKey', sellerKey);
-
-// ELEMENTS
-const titleIn = document.getElementById('titleIn');
-const authorIn = document.getElementById('authorIn');
-const whatsappIn = document.getElementById('whatsappIn');
-const emailIn = document.getElementById('emailIn');
-const categoryIn = document.getElementById('categoryIn');
-const bookType = document.getElementById('bookType');
-const imageIn = document.getElementById('imageIn');
-const postBookBtn = document.getElementById('postBookBtn');
-const processingText = document.getElementById('processingText');
-const booksList = document.getElementById('booksList');
-
-// IMAGE COMPRESSION FUNCTION
-function compressImage(file, maxSizeMB = 1) {
-    return new Promise((resolve)=>{
-        const reader = new FileReader();
+// SHOW/HIDE POST BOOK TAB
+const postBookTabBtn = document.getElementById('postBookTabBtn');
+const postBookTab = document.getElementById('postBookTab');
+postBookTabBtn.addEventListener('click',()=>postBookTab.style.display=postBookTab.style.display==='none'?'block':'none');
+</script>
+<script>
+// HELPER: Compress Image to ~1MB using Canvas
+async function compressImage(file, maxSizeMB=1) {
+    return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e=>{
-            const img = new Image();
-            img.src = e.target.result;
+            const img=new Image();
+            img.src=e.target.result;
             img.onload = ()=>{
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                let width = img.width;
-                let height = img.height;
-                if(width*height > maxSizeMB*1000000){
-                    const ratio = Math.sqrt((maxSizeMB*1000000)/(width*height));
-                    width = width*ratio;
-                    height = height*ratio;
-                }
-                canvas.width = width;
-                canvas.height = height;
+                const canvas=document.createElement('canvas');
+                let width=img.width;
+                let height=img.height;
+                const scale=Math.sqrt((maxSizeMB*1024*1024)/(img.size));
+                if(scale<1){width*=scale;height*=scale;}
+                canvas.width=width;
+                canvas.height=height;
+                const ctx=canvas.getContext('2d');
                 ctx.drawImage(img,0,0,width,height);
                 canvas.toBlob(blob=>{
                     resolve(blob);
-                }, 'image/jpeg', 0.8);
-            }
+                },'image/jpeg',0.8);
+            };
+        };
+        reader.onerror=err=>reject(err);
+    });
+}
+
+// SAVE TO LOCAL STORAGE FOR REFRESH
+function getSellerPosts(){return JSON.parse(localStorage.getItem('sellerPosts')||'[]');}
+function saveSellerPosts(posts){localStorage.setItem('sellerPosts',JSON.stringify(posts));}
+
+// DISPLAY BOOKS LIST
+async function loadBooks(sort='recent'){
+    const sellerPosts = getSellerPosts();
+    const booksList = document.getElementById('booksList');
+    booksList.innerHTML='';
+    const posts = sort==='nearest'?sellerPosts.sort((a,b)=>a.distance-b.distance):sellerPosts.sort((a,b)=>b.timestamp-a.timestamp);
+    posts.forEach(book=>{
+        const card=document.createElement('div');
+        card.className='book-card';
+        card.innerHTML=`
+            <img src="${book.imageURL}" alt="Book">
+            <div class="book-meta">
+                <h4>${book.title}</h4>
+                <p>${book.author}</p>
+                <p>${book.category} • ${book.type}</p>
+                <p>Status: ${book.status}</p>
+                <p class="small">WhatsApp: ${book.whatsapp}${book.email?(' • Email: '+book.email):''}</p>
+            </div>
+        `;
+        booksList.appendChild(card);
+    });
+}
+
+// ADD MARKER ON MAP
+function addMarkers(){
+    markersLayer.clearLayers();
+    const sellerPosts = getSellerPosts();
+    sellerPosts.forEach(book=>{
+        if(book.lat && book.lng){
+            const marker=L.marker([book.lat,book.lng]).bindPopup(`<b>${book.title}</b><br>${book.author}<br>Status: ${book.status}`);
+            markersLayer.addLayer(marker);
         }
     });
 }
 
 // POST BOOK
-postBookBtn.addEventListener('click', async()=>{
-    const title = titleIn.value.trim();
-    const author = authorIn.value.trim();
-    const whatsapp = whatsappIn.value.trim();
-    const email = emailIn.value.trim();
-    const category = categoryIn.value;
-    const type = bookType.value;
-    const file = imageIn.files[0];
-
-    if(!title || !author || !whatsapp){ alert('Please fill required fields'); return; }
-
-    processingText.innerText = 'Processing: 0%';
+document.getElementById('postBookBtn').addEventListener('click', async ()=>{
+    const title=document.getElementById('titleIn').value.trim();
+    const author=document.getElementById('authorIn').value.trim();
+    const whatsapp=document.getElementById('whatsappIn').value.trim();
+    const email=document.getElementById('emailIn').value.trim();
+    const category=document.getElementById('categoryIn').value;
+    const type=document.getElementById('bookType').value;
+    const imageFile=document.getElementById('imageIn').files[0];
+    if(!title||!author||!whatsapp||!imageFile){alert('Please fill required fields'); return;}
+    
+    // SHOW PROCESSING
+    const processingBarInner = document.getElementById('processingBarInner');
+    processingBarInner.style.width='0%';
 
     // COMPRESS IMAGE
-    let imgURL = '';
-    if(file){
-        processingText.innerText = 'Processing: 10%';
-        const compressed = await compressImage(file,1);
-        const storageRef = storage.ref(`books/${sellerKey}_${Date.now()}.jpg`);
-        await storageRef.put(compressed);
-        imgURL = await storageRef.getDownloadURL();
-        processingText.innerText = 'Processing: 50%';
-    }
+    const compressedImage = await compressImage(imageFile);
+    processingBarInner.style.width='30%';
 
     // GET LOCATION
-    let lat = 0, lng = 0;
-    if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(pos=>{
-            lat=pos.coords.latitude; lng=pos.coords.longitude;
-        });
-    }
+    navigator.geolocation.getCurrentPosition(async pos=>{
+        const lat=pos.coords.latitude;
+        const lng=pos.coords.longitude;
+        processingBarInner.style.width='60%';
 
-    // CREATE BOOK DATA
-    const bookData = {
-        title, author, whatsapp, email, category, type, imgURL,
-        sellerKey, status:'pending', lat, lng, createdAt:Date.now()
-    };
+        // UPLOAD IMAGE TO FIREBASE STORAGE
+        const imgRef=storage.ref('books/'+Date.now()+'_'+imageFile.name);
+        const uploadTask = imgRef.put(compressedImage);
+        uploadTask.on('state_changed',
+            snapshot=>{
+                const progress = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
+                processingBarInner.style.width=60+progress*0.4+'%';
+            },
+            error=>alert('Upload error:'+error),
+            async ()=>{
+                const imageURL=await uploadTask.snapshot.ref.getDownloadURL();
+                processingBarInner.style.width='100%';
 
-    // SAVE TO FIRESTORE
-    await booksCol.doc(sellerKey+'_'+Date.now()).set(bookData);
-    processingText.innerText = 'Processing: 100%';
+                // SAVE TO LOCAL STORAGE
+                const newBook={title,author,whatsapp,email,category,type,status:'Pending',lat,lng,timestamp:Date.now()};
+                const posts=getSellerPosts();
+                posts.push(newBook);
+                saveSellerPosts(posts);
 
-    // REDIRECT TO WHATSAPP
-    const msg = `Hello, I submitted a book for review:\nTitle: ${title}\nAuthor: ${author}\nWhatsApp: ${whatsapp}\nEmail: ${email}\nCategory: ${category}\nType: ${type}`;
-    const waUrl = `https://wa.me/9779821367407?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl,'_blank');
+                // ADD MARKER
+                addMarkers();
 
-    alert('Your book has been submitted for review. Your data is safe.');
-    loadSellerBooks();
+                // REDIRECT TO WHATSAPP
+                const msg=`Hello, I am submitting my book for review:\nTitle: ${title}\nAuthor: ${author}\nType: ${type}\nCategory: ${category}\nWhatsApp: ${whatsapp}\nEmail: ${email||'N/A'}`;
+                const waLink = `https://wa.me/<YOUR_NUMBER_WITH_COUNTRY_CODE>?text=${encodeURIComponent(msg)}`;
+                window.open(waLink,'_blank');
+
+                // RESET FORM
+                document.getElementById('titleIn').value='';
+                document.getElementById('authorIn').value='';
+                document.getElementById('whatsappIn').value='';
+                document.getElementById('emailIn').value='';
+                document.getElementById('imageIn').value='';
+                processingBarInner.style.width='0%';
+                alert('Book submitted. Your data is safe and sent for review.');
+                loadBooks(document.getElementById('sortSelect').value);
+            });
+    },err=>alert('Location required to post book'));
 });
 
-// LOAD SELLER BOOKS
-async function loadSellerBooks(){
-    booksList.innerHTML = '';
-    const snapshot = await booksCol.where('sellerKey','==',sellerKey).orderBy('createdAt','desc').get();
-    snapshot.forEach(doc=>{
-        const b = doc.data();
-        const card = document.createElement('div');
-        card.className='book-card';
-        card.innerHTML=`<div><img src="${b.imgURL||''}" alt=""></div>
-            <div class="book-meta">
-            <h4>${b.title}</h4>
-            <p>Author: ${b.author}</p>
-            <p>Status: ${b.status}</p>
-            <small>${b.type} • ${b.category}</small>
-            </div>`;
-        booksList.appendChild(card);
-    });
-}
+// LOAD BOOKS ON FILTER CHANGE
+document.getElementById('sortSelect').addEventListener('change',()=>loadBooks(document.getElementById('sortSelect').value));
 
 // INITIAL LOAD
-loadSellerBooks();
-
-// SHOW BOOKS ON MAP
-async function showBooksOnMap(){
-    markersLayer.clearLayers();
-    const snapshot = await booksCol.get();
-    snapshot.forEach(doc=>{
-        const b = doc.data();
-        if(b.lat && b.lng){
-            const marker = L.marker([b.lat,b.lng]).addTo(markersLayer);
-            marker.bindPopup(`<b>${b.title}</b><br>${b.author}<br>${b.type}<br>${b.category}`);
-        }
-    });
-}
-showBooksOnMap();
-                                                                                 </script>
+loadBooks();
+addMarkers();
+</script>
