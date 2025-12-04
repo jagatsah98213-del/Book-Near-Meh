@@ -2,308 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Book Near Me — Seller & Buyer</title>
-
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-
-<style>
-:root{
-  --bg:#0f1724; --panel:rgba(255,255,255,0.06); --text:#e6eef8; --muted:#90a0b6;
-  --accent-start:#7c3aed; --accent-end:#06b6d4;
-}
-[data-theme="light"]{
-  --bg:#f4f7fb; --panel:rgba(255,255,255,0.92); --text:#0b1220; --muted:#334155;
-}
-html,body{height:100%;margin:0;font-family:'Poppins',system-ui,Arial; background:var(--bg); color:var(--text); display:flex; flex-direction:column;}
-header{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; backdrop-filter: blur(6px);}
-.brand{display:flex; align-items:center; gap:12px;}
-.logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent-start),var(--accent-end));display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 6px 18px rgba(8,8,15,0.4);}
-.title{font-weight:600;font-size:18px;}
-.controls{display:flex; gap:10px; align-items:center;}
-.btn{border:none;padding:10px 12px;border-radius:10px;cursor:pointer;background:var(--panel);color:var(--text);font-weight:600;}
-.btn.primary{background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:white;box-shadow:0 6px 18px rgba(0,0,0,0.35);}
-main{display:grid; grid-template-columns:420px 1fr; gap:18px; padding:18px; flex:1; min-height:0;}
-.panel{background:var(--panel); border-radius:12px; padding:14px; box-shadow:0 10px 30px rgba(2,6,23,0.5); overflow:auto; max-height:calc(100vh - 120px);}
-#map{width:100%; height:calc(100vh - 164px); border-radius:12px; box-shadow:0 8px 26px rgba(2,6,23,0.6);}
-.book-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:10px; margin-bottom:12px; display:flex; gap:10px; align-items:flex-start;}
-.book-card img{width:88px;height:110px;object-fit:cover;border-radius:8px;flex-shrink:0;box-shadow:0 6px 16px rgba(2,6,23,0.6);}
-.book-meta{flex:1;}
-.book-meta h4{margin:0 0 6px 0;font-size:15px;}
-.book-meta p{margin:0;color:var(--muted);font-size:13px;}
-.small{font-size:12px;color:var(--muted); margin-top:8px;}
-.field{margin-top:12px;}
-input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:none;background:rgba(255,255,255,0.03);color:var(--text);}
-.user-menu{position:relative;}
-.menu{position:absolute; right:0; top:48px; background:var(--panel); border-radius:10px; padding:8px; min-width:240px; box-shadow:0 8px 24px rgba(2,6,23,0.5);}
-.menu button{display:block;width:100%;text-align:left;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--text);cursor:pointer;}
-label.switch{display:inline-flex; gap:8px; align-items:center;}
-.post-card { display:none; padding:14px; border-radius:14px; backdrop-filter:blur(12px); background:rgba(255,255,255,0.06); margin-top:12px;}
-.footer-note{font-size:12px;color:var(--muted);margin-top:6px;}
-#processingBar{height:6px; border-radius:4px; background:rgba(255,255,255,0.08); margin-top:6px; overflow:hidden;}
-#processingBarInner{height:100%; width:0%; background:linear-gradient(90deg,var(--accent-start),var(--accent-end)); transition:width 0.3s;}
-@media(max-width:980px){main{grid-template-columns:1fr; padding:12px} #map{height:60vh}}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supabase Test</title>
 </head>
-<body data-theme="dark">
+<body>
+<h2>Supabase Test</h2>
+<div id="result">Testing...</div>
 
-<header>
-  <div class="brand">
-    <div class="logo">B</div>
-    <div>
-      <div class="title">Book Near Me</div>
-      <div class="muted" style="font-size:12px">Realtime book map</div>
-    </div>
-  </div>
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/supabase.min.js';
 
-  <div class="controls">
-    <label class="switch muted">
-      <input id="modeToggle" type="checkbox" style="width:0;height:0;opacity:0;"/>
-      <span id="modeLabel" class="muted">Dark</span>
-    </label>
+  // Your Supabase details
+  const SUPABASE_URL = "https://pjydlzeuxmtaowpgqmol.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeWRsemV1eG10YW93cGdxbW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MzkzMTAsImV4cCI6MjA4MDQxNTMxMH0.DjskIRS3PzSq01U-XxSClRK5Uy0n_bWrAFUHSacSNfo";
 
-    <button class="btn" id="myLocationBtn">📍 My Location</button>
-    <button class="btn primary" id="subscribeBtn">📺 Subscribe NS Jagat</button>
-  </div>
-</header>
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<main>
-  <aside class="panel" id="leftPanel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <div style="font-weight:600">Books Management</div>
-      <button class="btn primary" id="postBookTabBtn">📚 Post Your Book</button>
-    </div>
+  async function testSupabase() {
+    try {
+      // Test fetching all books from 'books' table
+      const { data, error } = await supabase.from('books').select('*');
 
-    <div class="post-card" id="postBookTab">
-      <div class="field">
-        <select id="bookType">
-          <option value="individual">Individual Book</option>
-          <option value="academic">Academic Book Set</option>
-        </select>
-      </div>
-      <div class="field"><input id="titleIn" placeholder="Book Title" type="text"></div>
-      <div class="field"><input id="authorIn" placeholder="Author / Set Name" type="text"></div>
-      <div class="field"><input id="whatsappIn" placeholder="WhatsApp Number" type="text"></div>
-      <div class="field"><input id="emailIn" placeholder="Email (optional)" type="text"></div>
-      <div class="field"><select id="categoryIn"><option>Fiction</option><option>Non-Fiction</option><option>Education</option><option>Technology</option><option>Kids</option></select></div>
-      <div class="field"><input id="imageIn" type="file" accept="image/*"></div>
-      <div class="field">
-        <button class="btn primary" id="postBookBtn">Submit Book</button>
-        <div id="processingBar"><div id="processingBarInner"></div></div>
-      </div>
-      <div class="footer-note">Your book info will go for review. Images compressed automatically. You will be redirected to WhatsApp.</div>
-    </div>
+      if(error) {
+        document.getElementById('result').innerText = "Error: " + error.message;
+        console.error(error);
+      } else {
+        document.getElementById('result').innerText = "Success! Books fetched: " + data.length;
+        console.log("Books data:", data);
+      }
+    } catch(err) {
+      document.getElementById('result').innerText = "Unexpected Error: " + err.message;
+      console.error(err);
+    }
+  }
 
-    <hr style="border:none;height:1px;background:rgba(255,255,255,0.04); margin:14px 0;">
-
-    <!-- Filter Section -->
-    <div style="display:flex; gap:8px; align-items:center; justify-content:space-between;">
-      <div style="font-weight:600">Available Books</div>
-      <select id="sortSelect" class="btn" style="background:transparent; padding:8px 10px;">
-        <option value="recent">Newest</option>
-        <option value="nearest">Nearest</option>
-      </select>
-    </div>
-    <div id="booksList" style="margin-top:12px;"></div>
-  </aside>
-
-  <section>
-    <div id="map"></div>
-  </section>
-</main>
-
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-
-<script>
-// FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyB3kahd5nJOga4YUZnHATrPHu4Ief7b_64",
-  authDomain: "book-nearme.firebaseapp.com",
-  projectId: "book-nearme",
-  storageBucket: "book-nearme.appspot.com",
-  messagingSenderId: "857560283510",
-  appId: "1:857560283510:web:9c4bd7f7dca04c35552257"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const storage = firebase.storage();
-const booksCol = db.collection('books');
-
-// THEME
-const modeToggle = document.getElementById('modeToggle');
-const modeLabel = document.getElementById('modeLabel');
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme', theme);
-  modeLabel.innerText = theme==='dark'?'Dark':'Light';
-  localStorage.setItem('bm_theme',theme);
-}
-modeToggle.addEventListener('change',()=>applyTheme(modeToggle.checked?'light':'dark'));
-applyTheme(localStorage.getItem('bm_theme')||'dark');
-
-// MAP INIT
-let map = L.map('map').setView([26, 84],6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-let markersLayer = L.layerGroup().addTo(map);
-
-// SHOW MY LOCATION
-document.getElementById('myLocationBtn').addEventListener('click',()=>{
-  if(!navigator.geolocation){alert('Geolocation not supported'); return;}
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    map.setView([lat,lng],12);
-    L.circle([lat,lng],{radius:200,color:'#06b6d4',opacity:0.6}).addTo(map);
-  },err=>alert('Location access denied or error'));
-});
-
-// SUBSCRIBE BUTTON
-document.getElementById('subscribeBtn').addEventListener('click',()=>window.open("https://www.youtube.com/@nsjagat-c?sub_confirmation=1","_blank"));
-
-// SHOW/HIDE POST BOOK TAB
-const postBookTabBtn = document.getElementById('postBookTabBtn');
-const postBookTab = document.getElementById('postBookTab');
-postBookTabBtn.addEventListener('click',()=>postBookTab.style.display=postBookTab.style.display==='none'?'block':'none');
+  testSupabase();
 </script>
-<script>
-// HELPER: Compress Image to ~1MB using Canvas
-async function compressImage(file, maxSizeMB=1) {
-    return new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = e=>{
-            const img=new Image();
-            img.src=e.target.result;
-            img.onload = ()=>{
-                const canvas=document.createElement('canvas');
-                let width=img.width;
-                let height=img.height;
-                const scale=Math.sqrt((maxSizeMB*1024*1024)/(img.size));
-                if(scale<1){width*=scale;height*=scale;}
-                canvas.width=width;
-                canvas.height=height;
-                const ctx=canvas.getContext('2d');
-                ctx.drawImage(img,0,0,width,height);
-                canvas.toBlob(blob=>{
-                    resolve(blob);
-                },'image/jpeg',0.8);
-            };
-        };
-        reader.onerror=err=>reject(err);
-    });
-}
-
-// SAVE TO LOCAL STORAGE FOR REFRESH
-function getSellerPosts(){return JSON.parse(localStorage.getItem('sellerPosts')||'[]');}
-function saveSellerPosts(posts){localStorage.setItem('sellerPosts',JSON.stringify(posts));}
-
-// DISPLAY BOOKS LIST
-async function loadBooks(sort='recent'){
-    const sellerPosts = getSellerPosts();
-    const booksList = document.getElementById('booksList');
-    booksList.innerHTML='';
-    const posts = sort==='nearest'?sellerPosts.sort((a,b)=>a.distance-b.distance):sellerPosts.sort((a,b)=>b.timestamp-a.timestamp);
-    posts.forEach(book=>{
-        const card=document.createElement('div');
-        card.className='book-card';
-        card.innerHTML=`
-            <img src="${book.imageURL}" alt="Book">
-            <div class="book-meta">
-                <h4>${book.title}</h4>
-                <p>${book.author}</p>
-                <p>${book.category} • ${book.type}</p>
-                <p>Status: ${book.status}</p>
-                <p class="small">WhatsApp: ${book.whatsapp}${book.email?(' • Email: '+book.email):''}</p>
-            </div>
-        `;
-        booksList.appendChild(card);
-    });
-}
-
-// ADD MARKER ON MAP
-function addMarkers(){
-    markersLayer.clearLayers();
-    const sellerPosts = getSellerPosts();
-    sellerPosts.forEach(book=>{
-        if(book.lat && book.lng){
-            const marker=L.marker([book.lat,book.lng]).bindPopup(`<b>${book.title}</b><br>${book.author}<br>Status: ${book.status}`);
-            markersLayer.addLayer(marker);
-        }
-    });
-}
-
-// POST BOOK
-document.getElementById('postBookBtn').addEventListener('click', async ()=>{
-    const title=document.getElementById('titleIn').value.trim();
-    const author=document.getElementById('authorIn').value.trim();
-    const whatsapp=document.getElementById('whatsappIn').value.trim();
-    const email=document.getElementById('emailIn').value.trim();
-    const category=document.getElementById('categoryIn').value;
-    const type=document.getElementById('bookType').value;
-    const imageFile=document.getElementById('imageIn').files[0];
-    if(!title||!author||!whatsapp||!imageFile){alert('Please fill required fields'); return;}
-    
-    // SHOW PROCESSING
-    const processingBarInner = document.getElementById('processingBarInner');
-    processingBarInner.style.width='0%';
-
-    // COMPRESS IMAGE
-    const compressedImage = await compressImage(imageFile);
-    processingBarInner.style.width='30%';
-
-    // GET LOCATION
-    navigator.geolocation.getCurrentPosition(async pos=>{
-        const lat=pos.coords.latitude;
-        const lng=pos.coords.longitude;
-        processingBarInner.style.width='60%';
-
-        // UPLOAD IMAGE TO FIREBASE STORAGE
-        const imgRef=storage.ref('books/'+Date.now()+'_'+imageFile.name);
-        const uploadTask = imgRef.put(compressedImage);
-        uploadTask.on('state_changed',
-            snapshot=>{
-                const progress = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
-                processingBarInner.style.width=60+progress*0.4+'%';
-            },
-            error=>alert('Upload error:'+error),
-            async ()=>{
-                const imageURL=await uploadTask.snapshot.ref.getDownloadURL();
-                processingBarInner.style.width='100%';
-
-                // SAVE TO LOCAL STORAGE
-                const newBook={title,author,whatsapp,email,category,type,status:'Pending',lat,lng,timestamp:Date.now()};
-                const posts=getSellerPosts();
-                posts.push(newBook);
-                saveSellerPosts(posts);
-
-                // ADD MARKER
-                addMarkers();
-
-                // REDIRECT TO WHATSAPP
-                const msg=`Hello, I am submitting my book for review:\nTitle: ${title}\nAuthor: ${author}\nType: ${type}\nCategory: ${category}\nWhatsApp: ${whatsapp}\nEmail: ${email||'N/A'}`;
-                const waLink = `https://wa.me/<YOUR_NUMBER_WITH_COUNTRY_CODE>?text=${encodeURIComponent(msg)}`;
-                window.open(waLink,'_blank');
-
-                // RESET FORM
-                document.getElementById('titleIn').value='';
-                document.getElementById('authorIn').value='';
-                document.getElementById('whatsappIn').value='';
-                document.getElementById('emailIn').value='';
-                document.getElementById('imageIn').value='';
-                processingBarInner.style.width='0%';
-                alert('Book submitted. Your data is safe and sent for review.');
-                loadBooks(document.getElementById('sortSelect').value);
-            });
-    },err=>alert('Location required to post book'));
-});
-
-// LOAD BOOKS ON FILTER CHANGE
-document.getElementById('sortSelect').addEventListener('change',()=>loadBooks(document.getElementById('sortSelect').value));
-
-// INITIAL LOAD
-loadBooks();
-addMarkers();
-</script>
+</body>
+</html>
