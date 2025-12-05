@@ -1,42 +1,463 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Supabase Test</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Book Near Me — Appwrite</title>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+<style>
+  :root{--bg:#0f1724;--panel:rgba(255,255,255,0.06);--text:#e6eef8;--muted:#90a0b6;--accent-start:#7c3aed;--accent-end:#06b6d4;}
+  [data-theme="light"]{--bg:#f4f7fb;--panel:rgba(255,255,255,0.92);--text:#0b1220;--muted:#334155;}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Poppins,Arial;color:var(--text);background:var(--bg);display:flex;flex-direction:column;}
+  header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:transparent;}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:44px;height:44;border-radius:10px;background:linear-gradient(135deg,var(--accent-start),var(--accent-end));display:flex;align-items:center;justify-content:center;font-weight:800}
+  .controls{display:flex;gap:8px;align-items:center}
+  .btn{border:none;padding:8px 12px;border-radius:10px;cursor:pointer;background:var(--panel);color:var(--text);font-weight:600}
+  .btn.primary{background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:white}
+  #map{height:calc(100vh - 72px);border-radius:10px;margin:12px;}
+  /* Modal / full-screen form */
+  .modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(2,6,23,0.7);z-index:999}
+  .modal.show{display:flex}
+  .card{width:94%;max-width:640px;background:var(--panel);backdrop-filter:blur(12px);padding:18px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+  input,select,textarea{width:100%;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,0.03);color:var(--text);margin-top:10px}
+  .progress{height:6px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));width:0;border-radius:4px;margin-top:10px;transition:width .3s}
+  .small{font-size:13px;color:var(--muted);margin-top:8px}
+  .token-bar{display:flex;gap:8px;align-items:center}
+  #postsList{position:fixed;left:12px;top:84px;max-height:60vh;overflow:auto;width:320px;padding:12px;background:var(--panel);border-radius:12px;backdrop-filter:blur(8px)}
+  @media(max-width:900px){#postsList{position:static;width:auto;margin:12px}}
+</style>
 </head>
-<body>
-<h2>Supabase Test</h2>
-<div id="result">Testing...</div>
+<body data-theme="dark">
 
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/supabase.min.js';
+<header>
+  <div class="brand">
+    <div class="logo">B</div>
+    <div>
+      <div style="font-weight:700">Book Near Me</div>
+      <div class="small">Post books • Buyers find nearest</div>
+    </div>
+  </div>
 
-  // Your Supabase details
-  const SUPABASE_URL = "https://pjydlzeuxmtaowpgqmol.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqeWRsemV1eG10YW93cGdxbW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MzkzMTAsImV4cCI6MjA4MDQxNTMxMH0.DjskIRS3PzSq01U-XxSClRK5Uy0n_bWrAFUHSacSNfo";
+  <div class="controls">
+    <div class="token-bar">
+      <input id="tokenInput" placeholder="Enter or create token" style="min-width:180px"/>
+      <button class="btn" id="checkTokenBtn">Check / Use</button>
+    </div>
+    <button class="btn" id="themeBtn">🌗</button>
+    <button class="btn" id="locBtn">📍 My Location</button>
+    <button class="btn primary" id="openPostBtn">📚 Post Your Book</button>
+    <button class="btn" id="subBtn">📺 Subscribe</button>
+  </div>
+</header>
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+<div id="map"></div>
 
-  async function testSupabase() {
-    try {
-      // Test fetching all books from 'books' table
-      const { data, error } = await supabase.from('books').select('*');
+<!-- left posts list (desktop) -->
+<div id="postsList" style="display:none"></div>
 
-      if(error) {
-        document.getElementById('result').innerText = "Error: " + error.message;
-        console.error(error);
-      } else {
-        document.getElementById('result').innerText = "Success! Books fetched: " + data.length;
-        console.log("Books data:", data);
-      }
-    } catch(err) {
-      document.getElementById('result').innerText = "Unexpected Error: " + err.message;
-      console.error(err);
+<!-- token notice -->
+<div id="tokenNotice" class="small" style="padding:12px; display:none;"></div>
+
+<!-- Post modal -->
+<div id="postModal" class="modal" role="dialog" aria-hidden="true">
+  <div class="card" id="postCard" style="max-width:720px">
+    <h3 style="margin:0 0 8px 0">Post Your Book</h3>
+
+    <select id="bookType"><option value="individual">Individual Book</option><option value="academic">Academic Book Set</option></select>
+    <input id="titleIn" placeholder="Title (required)"/>
+    <input id="authorIn" placeholder="Author / Set name (required)"/>
+    <input id="whatsappIn" placeholder="WhatsApp number (required)"/>
+    <input id="emailIn" placeholder="Email (optional)"/>
+    <select id="categoryIn"><option>Fiction</option><option>Non-Fiction</option><option>Education</option><option>Technology</option><option>Kids</option></select>
+    <input id="imageIn" type="file" accept="image/*"/>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn primary" id="submitBtn">Submit & Redirect WhatsApp</button>
+      <button class="btn" id="cancelPostBtn">Cancel</button>
+    </div>
+    <div class="progress" id="progressBar" style="width:0%"></div>
+    <div class="small">After submit you will be redirected to WhatsApp to confirm. Posts remain <strong>pending</strong> until you approve them manually in Appwrite console.</div>
+  </div>
+</div>
+
+<!-- Appwrite SDK -->
+<script src="https://cdn.jsdelivr.net/npm/appwrite@13.7.0"></script>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+<script>
+/* ======================
+   CONFIG - replace only if you change Appwrite settings
+   ====================== */
+const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT = "6931939e002870de31b4";
+const DB_ID = "693193d90004270c0877";
+const COLLECTION_ID = "6fgwsG56jj";         // from you
+const BUCKET_ID = "693197f300105e288f21";   // from you
+const YOUR_WHATSAPP = "9779821367407";     // change if different
+const YT_CHANNEL = "https://www.youtube.com/@nsjagat-c?sub_confirmation=1";
+
+/* ======================
+   Initialize Appwrite (client only) - NO SECRET is used here
+   ====================== */
+const client = new Appwrite.Client()
+  .setEndpoint(APPWRITE_ENDPOINT)
+  .setProject(APPWRITE_PROJECT);
+
+const databases = new Appwrite.Databases(client);
+const storage = new Appwrite.Storage(client);
+const realtime = new Appwrite.Realtime(client);
+
+/* ======================
+   Helper + UI refs
+   ====================== */
+const tokenInput = document.getElementById('tokenInput');
+const checkTokenBtn = document.getElementById('checkTokenBtn');
+const tokenNotice = document.getElementById('tokenNotice');
+const postsListEl = document.getElementById('postsList');
+const postModal = document.getElementById('postModal');
+const openPostBtn = document.getElementById('openPostBtn');
+const cancelPostBtn = document.getElementById('cancelPostBtn');
+const submitBtn = document.getElementById('submitBtn');
+const progressBar = document.getElementById('progressBar');
+const locBtn = document.getElementById('locBtn');
+const subBtn = document.getElementById('subBtn');
+const themeBtn = document.getElementById('themeBtn');
+
+/* ======================
+   Theme
+   ====================== */
+function applyTheme(theme){ document.documentElement.setAttribute('data-theme',theme); localStorage.setItem('bnm_theme',theme); }
+themeBtn.addEventListener('click', ()=> applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'));
+applyTheme(localStorage.getItem('bnm_theme') || 'dark');
+
+/* ======================
+   Token logic (Option 2 with auto-check)
+   ====================== */
+let USER_TOKEN = localStorage.getItem('bnm_token') || null;
+function showTokenNotice(msg, bad=false){ tokenNotice.style.display='block'; tokenNotice.innerText = msg; tokenNotice.style.color = bad ? '#ffb3b3' : '#bfe3ff'; setTimeout(()=> tokenNotice.style.display='none', 7000); }
+
+async function isTokenUsed(token){
+  try{
+    const res = await databases.listDocuments(DB_ID, COLLECTION_ID, [ Appwrite.Query.equal('token', token) ]);
+    return (res.total > 0);
+  }catch(err){
+    console.error('isTokenUsed error', err);
+    showTokenNotice('Could not check token (network).', true);
+    return true; // safe default to avoid collision
+  }
+}
+
+checkTokenBtn.addEventListener('click', async ()=>{
+  const t = (tokenInput.value||'').trim();
+  if(!t){ showTokenNotice('Please type a token to use or create.'); return; }
+
+  const used = await isTokenUsed(t);
+  if(!used){
+    // token free — claim it
+    USER_TOKEN = t;
+    localStorage.setItem('bnm_token', USER_TOKEN);
+    showTokenNotice('Token reserved for you. Saved locally.');
+    refreshUIAfterToken();
+  } else {
+    // token already used
+    // If user already has same token in localStorage, allow as owner
+    if(localStorage.getItem('bnm_token') === t){
+      USER_TOKEN = t;
+      showTokenNotice('Welcome back — viewing your posts.');
+      refreshUIAfterToken();
+      return;
+    }
+    // Not same as local, warn and allow user to "claim" if they actually own it (no server auth)
+    if(confirm('This token is already used by someone. If this is your token (you used it before), press OK to use it here. Otherwise pick a new token.')){
+      USER_TOKEN = t;
+      localStorage.setItem('bnm_token', USER_TOKEN);
+      showTokenNotice('Token set locally. If this was not yours, posts may be shared.');
+      refreshUIAfterToken();
+    } else {
+      showTokenNotice('Choose a different token.');
     }
   }
+});
 
-  testSupabase();
+/* ======================
+   Map init
+   ====================== */
+const map = L.map('map', { preferCanvas:true }).setView([26,84],6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
+const markersLayer = L.layerGroup().addTo(map);
+function showMyLocation(){ if(!navigator.geolocation){ alert('Geolocation not supported'); return; } navigator.geolocation.getCurrentPosition(p=>{ map.setView([p.coords.latitude,p.coords.longitude],12); L.circle([p.coords.latitude,p.coords.longitude],{radius:200, color:'#06b6d4', opacity:0.6}).addTo(map); }, e=> alert('Location denied or unavailable')); }
+locBtn.addEventListener('click', showMyLocation);
+subBtn.addEventListener('click', ()=> window.open(YT_CHANNEL, '_blank'));
+
+/* ======================
+   UI helpers
+   ====================== */
+function showPostsPanel(show){ postsListEl.style.display = show ? 'block' : 'none'; }
+function clearForm(){ document.getElementById('titleIn').value=''; document.getElementById('authorIn').value=''; document.getElementById('whatsappIn').value=''; document.getElementById('emailIn').value=''; document.getElementById('imageIn').value=''; }
+
+/* ======================
+   Load posts (approved for map, user posts for owner)
+   ====================== */
+async function loadPosts(){
+  try{
+    // fetch approved posts for public map
+    const approved = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+      Appwrite.Query.equal('status', 'approved'),
+      Appwrite.Query.limit(100)
+    ]);
+    // fetch user's posts (token) if available
+    let myDocs = { documents:[] };
+    if(USER_TOKEN){
+      myDocs = await databases.listDocuments(DB_ID, COLLECTION_ID, [
+        Appwrite.Query.equal('token', USER_TOKEN),
+        Appwrite.Query.limit(200)
+      ]);
+    }
+
+    // render map markers for approved
+    markersLayer.clearLayers();
+    approved.documents.forEach(doc=>{
+      if(doc.lat && doc.lng){
+        const marker = L.marker([doc.lat, doc.lng]).addTo(markersLayer);
+        const popup = `
+          <strong>${escapeHtml(doc.title)}</strong><br/>
+          ${escapeHtml(doc.author || '')}<br/>
+          ${escapeHtml(doc.category || '')}<br/>
+          Status: ${doc.status || ''}<br/>
+          <a target="_blank" href="https://wa.me/${encodeURIComponent(doc.whatsapp)}">Contact via WhatsApp</a>
+        `;
+        marker.bindPopup(popup);
+      }
+    });
+
+    // render owner's posts list
+    if(USER_TOKEN){
+      postsListEl.innerHTML = '';
+      myDocs.documents.forEach(doc=>{
+        const el = document.createElement('div');
+        el.style.border = '1px solid rgba(255,255,255,0.04)';
+        el.style.padding = '8px';
+        el.style.marginBottom = '8px';
+        el.innerHTML = `
+          <div style="display:flex;gap:8px">
+            <div style="flex:1">
+              <strong>${escapeHtml(doc.title)}</strong><br/>
+              <span class="small">${escapeHtml(doc.author || '')} • ${escapeHtml(doc.category||'')}</span>
+              <div class="small">Status: <strong>${doc.status}</strong></div>
+            </div>
+            <div style="width:78px">
+              ${doc.image ? `<img src="${escapeHtml(doc.image)}" style="width:78px;height:78px;object-fit:cover;border-radius:6px"/>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" onclick="zoomTo(${doc.lat||0},${doc.lng||0})">Show</button>
+            <button class="btn" onclick="editPost('${doc.$id}')">Edit</button>
+            <button class="btn" onclick="deletePost('${doc.$id}')">Delete</button>
+          </div>
+        `;
+        postsListEl.appendChild(el);
+      });
+      showPostsPanel(true);
+    } else {
+      showPostsPanel(false);
+    }
+
+  }catch(err){
+    console.error('loadPosts error', err);
+  }
+}
+function zoomTo(lat,lng){ if(lat && lng) map.setView([lat,lng],13); else alert('Location not available'); }
+
+/* ======================
+   Edit / Delete (owner only via token check)
+   ====================== */
+async function deletePost(docId){
+  if(!confirm('Delete this post?')) return;
+  try{
+    await databases.deleteDocument(DB_ID, COLLECTION_ID, docId);
+    showTokenNotice('Post deleted.');
+    loadPosts();
+  }catch(e){ console.error(e); alert('Delete failed: '+(e.message||e)); }
+}
+
+async function editPost(docId){
+  try{
+    const doc = await databases.getDocument(DB_ID, COLLECTION_ID, docId);
+    // Check token matches
+    if(!USER_TOKEN || doc.token !== USER_TOKEN){ alert('You are not owner of this post.'); return; }
+    // fill modal with doc values
+    document.getElementById('bookType').value = doc.bookType || 'individual';
+    document.getElementById('titleIn').value = doc.title || '';
+    document.getElementById('authorIn').value = doc.author || '';
+    document.getElementById('whatsappIn').value = doc.whatsapp || '';
+    document.getElementById('emailIn').value = doc.email || '';
+    document.getElementById('categoryIn').value = doc.category || '';
+    // store editing id
+    postModal.dataset.editing = docId;
+    postModal.classList.add('show');
+  }catch(e){ console.error(e); alert('Could not load post to edit.'); }
+}
+
+/* ======================
+   Submit post (create or update)
+   ====================== */
+openPostBtn.addEventListener('click', ()=>{
+  if(!USER_TOKEN){ showTokenNotice('Please enter or create a token first.'); tokenInput.focus(); return; }
+  postModal.dataset.editing = ''; // clear editing
+  clearForm();
+  postModal.classList.add('show');
+});
+cancelPostBtn.addEventListener('click', ()=> postModal.classList.remove('show'));
+
+async function compressImage(file, maxMB=1){
+  if(!file) return null;
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, Math.sqrt((maxMB*1024*1024) / file.size));
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        canvas.toBlob(blob=>{
+          if(!blob) return resolve(file);
+          resolve(new File([blob], file.name, { type: file.type }));
+        }, file.type, 0.85);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+submitBtn.addEventListener('click', async ()=>{
+  submitBtn.disabled = true;
+  progressBar.style.width = '5%';
+  const title = document.getElementById('titleIn').value.trim();
+  const author = document.getElementById('authorIn').value.trim();
+  const whatsapp = document.getElementById('whatsappIn').value.trim();
+  const email = document.getElementById('emailIn').value.trim();
+  const category = document.getElementById('categoryIn').value;
+  const bookType = document.getElementById('bookType').value;
+  const fileInput = document.getElementById('imageIn');
+  const file = fileInput.files[0];
+
+  if(!title || !author || !whatsapp){ alert('Please fill required fields (title, author, whatsapp).'); submitBtn.disabled=false; return; }
+
+  // compress image
+  let compressed = null;
+  if(file){
+    try{ compressed = await compressImage(file, 1); } catch(e){ console.warn('compress failed', e); compressed = file; }
+  }
+  progressBar.style.width = '25%';
+
+  // get geolocation (try)
+  let lat=0, lng=0;
+  try{
+    await new Promise((res,rej)=>{
+      navigator.geolocation.getCurrentPosition(p=>{
+        lat = p.coords.latitude; lng = p.coords.longitude; res();
+      }, err => {
+        // ignore — still allow posting with lat=0,lng=0
+        console.warn('geolocation err', err); res();
+      }, { timeout:8000 });
+    });
+  }catch(e){ console.warn(e); }
+
+  progressBar.style.width = '40%';
+
+  let imageUrl = '';
+  if(compressed){
+    try{
+      const fileId = Appwrite.ID.unique();
+      const uploaded = await storage.createFile(BUCKET_ID, fileId, compressed);
+      // create public view url
+      imageUrl = `${APPWRITE_ENDPOINT.replace(/\/v1$/,'')}/storage/buckets/${BUCKET_ID}/files/${uploaded.$id}/view?project=${APPWRITE_PROJECT}`;
+    }catch(e){
+      console.error('upload error', e); alert('Image upload failed: '+(e.message||e)); submitBtn.disabled=false; progressBar.style.width='0%'; return;
+    }
+    progressBar.style.width = '65%';
+  }
+
+  // Build document object
+  const payload = {
+    token: USER_TOKEN,
+    bookType,
+    title,
+    author,
+    whatsapp,
+    email,
+    category,
+    image: imageUrl,
+    lat,
+    lng,
+    status: 'pending',
+    created: new Date().toISOString()
+  };
+
+  try{
+    // If editing existing doc
+    const editingId = postModal.dataset.editing;
+    if(editingId){
+      // fetch doc to validate ownership
+      const doc = await databases.getDocument(DB_ID, COLLECTION_ID, editingId);
+      if(doc.token !== USER_TOKEN){ alert('Not owner of this post'); submitBtn.disabled=false; return; }
+      await databases.updateDocument(DB_ID, COLLECTION_ID, editingId, payload);
+      showTokenNotice('Post updated (pending).');
+    } else {
+      // create
+      await databases.createDocument(DB_ID, COLLECTION_ID, Appwrite.ID.unique(), payload);
+      showTokenNotice('Post submitted (pending).');
+    }
+
+    progressBar.style.width = '90%';
+
+    // redirect to WhatsApp to notify owner (your number)
+    const waMsg = encodeURIComponent(`Hello, I submitted a book for review.\nTitle: ${title}\nAuthor/Set: ${author}\nToken: ${USER_TOKEN}\nPlease review and approve.`);
+    window.open(`https://wa.me/${YOUR_WHATSAPP}?text=${waMsg}`, '_blank');
+
+    progressBar.style.width = '100%';
+    setTimeout(()=>{ progressBar.style.width = '0%'; postModal.classList.remove('show'); submitBtn.disabled=false; }, 700);
+    loadPosts();
+  }catch(e){
+    console.error('createDocument error', e);
+    alert('Failed to submit: ' + (e.message||e));
+    submitBtn.disabled=false;
+    progressBar.style.width='0%';
+  }
+});
+
+/* ======================
+   Realtime subscription to collection (all docs)
+   ====================== */
+try{
+  realtime.subscribe(`databases.${DB_ID}.collections.${COLLECTION_ID}.documents`, response=>{
+    // response.events contains e.g. 'databases.*.collections.*.documents.*.create'
+    // update posts/map on any create/update/delete
+    loadPosts();
+  });
+}catch(e){ console.warn('Realtime subscribe may fail if CORS or permissions block it', e); }
+
+/* ======================
+   Utility
+   ====================== */
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ======================
+   Startup
+   ====================== */
+(function init(){
+  // prefill token input if we have it
+  if(USER_TOKEN){ tokenInput.value = USER_TOKEN; showTokenNotice('Using saved token.'); }
+  // initial load
+  loadPosts();
+})();
 </script>
 </body>
 </html>
