@@ -13,620 +13,467 @@
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@1.0.17/dist/browser-image-compression.js"></script>
 
 <style>
-  :root{
-    --accent: #06b6d4;
-    --glass: rgba(255,255,255,0.06);
-    --glass-2: rgba(255,255,255,0.04);
-    --muted: #9aa4b2;
-    --radius: 14px;
-  }
-  [data-theme="light"]{
-    --bg: #f6fbff; --text: #07122a; --card: rgba(255,255,255,0.9);
-  }
-  [data-theme="dark"]{
-    --bg: linear-gradient(180deg,#071124,#081428); --text: #e7eef6; --card: rgba(6,8,12,0.78);
-  }
-
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
-  /* Map */
-  #map { position:fixed; inset:0; z-index:0; }
-
-  /* Floating menu toggle */
-  .menu-toggle{
-    position:fixed; left:18px; top:18px; z-index:2200; width:56px; height:56px;
-    border-radius:12px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,var(--accent), #34d399); color:white; cursor:pointer;
-    box-shadow:0 10px 30px rgba(2,6,23,0.45);
-  }
-  .menu-toggle:active{ transform:translateY(1px); }
-
-  /* Sidebar (glass) */
-  #sidebar{
-    position:fixed; left:-340px; top:18px; bottom:18px; width:340px; z-index:2100; padding:18px;
-    border-radius:18px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-    backdrop-filter: blur(10px) saturate(1.05); box-shadow:0 30px 80px rgba(2,6,23,0.55); transition:left .28s cubic-bezier(.2,.9,.2,1);
-  }
-  #sidebar.show{ left:18px; }
-  #sidebar.dark{ background: linear-gradient(180deg, rgba(6,8,12,0.75), rgba(4,6,8,0.58)); color:var(--text); }
-
-  .brand { display:flex; gap:12px; align-items:center; margin-bottom:8px; }
-  .logo { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); font-weight:800; font-size:18px; color:#042e2e; }
-  h1.appname{ margin:0; font-size:1.1rem; letter-spacing:0.4px; }
-
-  .muted{ color:var(--muted); font-size:0.86rem; }
-
-  /* Buttons */
-  .btn { display:flex; gap:10px; align-items:center; padding:12px 14px; border-radius:12px; border:none; cursor:pointer; background:transparent; color:var(--text); font-weight:700; transition:all .15s; width:100%; text-align:left; }
-  .btn:hover{ transform:translateY(-3px); box-shadow:0 10px 30px rgba(2,6,23,0.25); }
-  .btn.primary{ background: linear-gradient(90deg,var(--accent), #34d399); color:#042e2e; }
-  .btn.ghost{ background: rgba(255,255,255,0.03); }
-
-  /* Modal backdrop & card */
-  .modal-backdrop{ position:fixed; inset:0; z-index:2400; display:none; align-items:center; justify-content:center; }
-  .modal-backdrop.show{ display:flex; background: rgba(2,6,23,0.48); }
-  .card { width:100%; max-width:560px; border-radius:14px; padding:18px; backdrop-filter: blur(10px) saturate(1.05); background:var(--card); box-shadow:0 30px 80px rgba(2,6,23,0.5); }
-  .card .row{ display:flex; gap:12px; }
-
-  /* Form fields */
-  label.small{ font-size:13px; color:var(--muted); }
-  input[type="text"], input[type="email"], input[type="password"], select {
-    width:100%; padding:12px; border-radius:10px; border:1px solid rgba(2,6,23,0.06); background:rgba(255,255,255,0.96); font-size:14px;
-  }
-  .card.dark input, .card.dark select{ background: rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.04); }
-
-  /* Upload preview */
-  .preview { margin-top:10px; display:flex; gap:10px; align-items:center; }
-  .preview img{ width:140px; height:96px; object-fit:cover; border-radius:8px; box-shadow:0 8px 30px rgba(2,6,23,0.3); }
-
-  /* progress */
-  .progress { margin-top:10px; height:12px; background:rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; }
-  .progress .fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent), #06b6d4); transition:width .18s ease; }
-
-  /* popup card style (leaflet) */
-  .leaflet-popup-content-wrapper { border-radius:12px; padding:10px; box-shadow:0 14px 40px rgba(2,6,23,0.25); }
-  .popup-card img{ width:200px; height:130px; object-fit:cover; border-radius:8px; display:block; margin:8px auto; }
-
-  /* loading overlay */
-  .loading { position:fixed; inset:0; z-index:4000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); }
-  .loading.show{ display:flex; }
-  .loading .box{ width:120px; height:120px; border-radius:12px; background:linear-gradient(180deg,#fff,#f0fbff); display:flex; align-items:center; justify-content:center; box-shadow:0 20px 60px rgba(2,6,23,0.5); }
-
-  /* responsive adjustments */
-  @media (max-width:900px){
-    #sidebar{ left:8px; right:8px; width:auto; top:72px; border-radius:12px; }
-    #sidebar.show{ left:8px; }
-  }
+:root{
+  --accent: #06b6d4;
+  --glass: rgba(255,255,255,0.06);
+  --muted: #9aa4b2;
+  --radius: 14px;
+}
+[data-theme="light"]{
+  --bg:#f6fbff; --text:#07122a; --card:rgba(255,255,255,0.9);
+}
+[data-theme="dark"]{
+  --bg:linear-gradient(180deg,#071124,#081428);
+  --text:#e7eef6; --card:rgba(6,8,12,0.78);
+}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--text);}
+#map{position:fixed; inset:0; z-index:0;}
+.menu-toggle{
+  position:fixed; left:18px; top:18px; z-index:2200; width:56px; height:56px;
+  border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,var(--accent),#34d399); color:white; cursor:pointer;
+  box-shadow:0 10px 30px rgba(2,6,23,0.45);
+}
+#sidebar{
+  position:fixed; left:-340px; top:18px; bottom:18px; width:340px; z-index:2100; padding:18px;
+  border-radius:18px; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  backdrop-filter: blur(10px) saturate(1.05); box-shadow:0 30px 80px rgba(2,6,23,0.55); transition:left .28s cubic-bezier(.2,.9,.2,1);
+}
+#sidebar.show{ left:18px; }
+#sidebar.dark{ background: linear-gradient(180deg, rgba(6,8,12,0.75), rgba(4,6,8,0.58)); color:var(--text); }
+.brand{ display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+.logo{ width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); font-weight:800; font-size:18px; color:#042e2e; }
+h1.appname{ margin:0; font-size:1.1rem; letter-spacing:0.4px; }
+.muted{ color:var(--muted); font-size:0.86rem; }
+.btn{ display:flex; gap:10px; align-items:center; padding:12px 14px; border-radius:12px; border:none; cursor:pointer; background:transparent; color:var(--text); font-weight:700; transition:all .15s; width:100%; text-align:left; }
+.btn:hover{ transform:translateY(-3px); box-shadow:0 10px 30px rgba(2,6,23,0.25); }
+.btn.primary{ background: linear-gradient(90deg,var(--accent), #34d399); color:#042e2e; }
+.btn.ghost{ background: rgba(255,255,255,0.03); }
+.modal-backdrop{ position:fixed; inset:0; z-index:2400; display:none; align-items:center; justify-content:center; }
+.modal-backdrop.show{ display:flex; background: rgba(2,6,23,0.48); }
+.card{ width:100%; max-width:560px; border-radius:14px; padding:18px; backdrop-filter: blur(10px) saturate(1.05); background:var(--card); box-shadow:0 30px 80px rgba(2,6,23,0.5); }
+.card .row{ display:flex; gap:12px; }
+label.small{ font-size:13px; color:var(--muted); }
+input[type="text"], input[type="email"], input[type="password"], select{ width:100%; padding:12px; border-radius:10px; border:1px solid rgba(2,6,23,0.06); background:rgba(255,255,255,0.96); font-size:14px; }
+.card.dark input, .card.dark select{ background: rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.04); }
+.preview{ margin-top:10px; display:flex; gap:10px; align-items:center; }
+.preview img{ width:140px; height:96px; object-fit:cover; border-radius:8px; box-shadow:0 8px 30px rgba(2,6,23,0.3); }
+.progress{ margin-top:10px; height:12px; background:rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; }
+.progress .fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent), #06b6d4); transition:width .18s ease; }
+@media (max-width:900px){
+  #sidebar{ left:8px; right:8px; width:auto; top:72px; border-radius:12px; }
+  #sidebar.show{ left:8px; }
+}
 </style>
 </head>
 <body data-theme="dark">
 
-  <!-- MAP -->
-  <div id="map"></div>
+<!-- MAP -->
+<div id="map"></div>
 
-  <!-- Floating menu toggle -->
-  <div class="menu-toggle" id="menuToggle" title="Menu">
-    <i class="fa fa-bars" style="font-size:20px"></i>
+<!-- Floating menu toggle -->
+<div class="menu-toggle" id="menuToggle" title="Menu"><i class="fa fa-book" style="font-size:20px"></i></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" class="dark" aria-hidden="true">
+  <div class="brand">
+    <div class="logo"><i class="fa fa-book" style="color:#042e2e;"></i></div>
+    <div>
+      <h1 class="appname">BookNearME</h1>
+      <div class="muted">Find & post books nearby</div>
+    </div>
   </div>
 
-  <!-- Sidebar -->
-  <aside id="sidebar" class="dark" aria-hidden="true">
-    <div class="brand">
-      <div class="logo"><i class="fa fa-book" style="color:#042e2e;"></i></div>
+  <div style="margin-top:12px;">
+    <button class="btn primary" id="openPostBtn"><i class="fa fa-plus"></i> Post Your Book</button>
+    <button class="btn" id="subscribeBtn"><i class="fa fa-youtube"></i> Subscribe (YouTube)</button>
+    <button class="btn" id="myLocBtn"><i class="fa fa-location-arrow"></i> Show My Location</button>
+    <button class="btn" id="themeBtn"><i class="fa fa-adjust"></i> Toggle Theme</button>
+    <button class="btn" id="logoutBtn"><i class="fa fa-sign-out-alt"></i> Logout</button>
+  </div>
+
+  <div style="margin-top:auto;">
+    <div class="muted" style="text-align:center; padding-top:10px">Made with ♥ — BookNearME</div>
+  </div>
+</aside>
+
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="authModal" role="dialog" aria-modal="true">
+  <div class="card dark" style="max-width:420px">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
       <div>
-        <h1 class="appname">BookNearME</h1>
-        <div class="muted">Find & post books nearby</div>
+        <div style="font-weight:800; font-size:1.05rem;">Welcome to BookNearME</div>
+        <div class="muted">Sign up or login to post & view contacts</div>
       </div>
+      <div class="muted">BookNearME</div>
     </div>
 
-    <div style="margin-top:12px;">
-      <button class="btn primary" id="openPostBtn"><i class="fa fa-plus"></i> Post Your Book</button>
-      <button class="btn" id="subscribeBtn"><i class="fa fa-youtube"></i> Subscribe (YouTube)</button>
-      <button class="btn" id="myLocBtn"><i class="fa fa-location-arrow"></i> Show My Location</button>
-      <button class="btn" id="themeBtn"><i class="fa fa-adjust"></i> Toggle Theme</button>
-      <button class="btn" id="logoutBtn"><i class="fa fa-sign-out-alt"></i> Logout</button>
-    </div>
-
-    <div style="margin-top:auto;">
-      <div class="muted" style="text-align:center; padding-top:10px">Made with ♥ — BookNearME</div>
-    </div>
-  </aside>
-
-  <!-- AUTH MODAL -->
-  <div class="modal-backdrop" id="authModal" role="dialog" aria-modal="true">
-    <div class="card dark" style="max-width:420px">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div style="font-weight:800; font-size:1.05rem;">Welcome to BookNearME</div>
-          <div class="muted">Sign up or login to post & view contacts</div>
+    <form id="authForm" style="margin-top:12px;" onsubmit="return false;">
+      <div class="row" style="margin-top:8px;">
+        <div style="flex:1">
+          <label class="small">Full name</label>
+          <input id="nameInput" type="text" placeholder="Your name (for display)"/>
         </div>
-        <div class="muted">BookNearME</div>
       </div>
 
-      <form id="authForm" style="margin-top:12px;" onsubmit="return false;">
-        <div class="row" style="margin-top:8px;">
-          <div style="flex:1">
-            <label class="small">Full name</label>
-            <input id="nameInput" type="text" placeholder="Your name (for display)"/>
-          </div>
+      <div class="row">
+        <div style="flex:1">
+          <label class="small">Email</label>
+          <input id="emailInput" type="email" placeholder="you@example.com" required/>
         </div>
-
-        <div class="row">
-          <div style="flex:1">
-            <label class="small">Email</label>
-            <input id="emailInput" type="email" placeholder="you@example.com" required/>
-          </div>
-        </div>
-
-        <div class="row">
-          <div style="flex:1">
-            <label class="small">Password (min 6)</label>
-            <input id="passInput" type="password" minlength="6" placeholder="••••••" required/>
-          </div>
-        </div>
-
-        <div class="row">
-          <div style="flex:1">
-            <label class="small">WhatsApp (optional)</label>
-            <input id="waInput" type="text" placeholder="e.g. 9821367407"/>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button id="authSubmit" class="btn primary" type="button"><i class="fa fa-user-check"></i> Sign up</button>
-          <button id="authToggle" class="btn" type="button"><i class="fa fa-sign-in-alt"></i> Switch to Login</button>
-        </div>
-
-        <div class="muted" style="margin-top:10px;">We'll send a verification email — verify to unlock contact details and posting.</div>
-      </form>
-    </div>
-  </div>
-
-  <!-- POST MODAL -->
-  <div class="modal-backdrop" id="postModal">
-    <div class="card dark">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="font-weight:800; font-size:1.05rem">Post a Book</div>
-        <div class="muted">All fields required</div>
       </div>
 
-      <form id="postForm" style="margin-top:12px;" onsubmit="return false;">
-        <div style="margin-top:8px;">
-          <label class="small">Title</label>
-          <input id="titleInput" type="text" placeholder="Book title" required/>
+      <div class="row">
+        <div style="flex:1">
+          <label class="small">Password (min 6)</label>
+          <input id="passInput" type="password" minlength="6" placeholder="••••••" required/>
         </div>
+      </div>
 
-        <div style="margin-top:8px;">
-          <label class="small">Author</label>
-          <input id="authorInput" type="text" placeholder="Author name" required/>
+      <div class="row">
+        <div style="flex:1">
+          <label class="small">WhatsApp (optional)</label>
+          <input id="waInput" type="text" placeholder="e.g. 9821367407"/>
         </div>
+      </div>
 
-        <div style="margin-top:8px;">
-          <label class="small">Condition</label>
-          <select id="conditionInput" required>
-            <option value="">-- choose condition --</option>
-            <option>Brand New (sealed)</option>
-            <option>Slightly Used</option>
-            <option>Used (good condition)</option>
-            <option>Old but usable</option>
-            <option>Damaged / Torn</option>
-          </select>
-        </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="authSubmit" class="btn primary" type="button"><i class="fa fa-user-check"></i> Sign up</button>
+        <button id="authToggle" class="btn" type="button"><i class="fa fa-sign-in-alt"></i> Switch to Login</button>
+      </div>
 
-        <div style="margin-top:8px;">
-          <label class="small">Cover image (will be compressed)</label>
-          <input id="imageInput" type="file" accept="image/*" required/>
-          <div class="preview" id="imagePreview"></div>
-        </div>
+      <div class="muted" style="margin-top:10px;">We'll send a verification email — verify to unlock contact details and posting.</div>
+    </form>
+  </div>
+</div>
 
-        <div style="display:flex; gap:10px; margin-top:12px;">
-          <button id="submitBook" class="btn primary" type="button"><i class="fa fa-paper-plane"></i> Submit & Request Approval</button>
-          <button id="cancelPost" class="btn" type="button"><i class="fa fa-times"></i> Cancel</button>
-        </div>
-
-        <div class="progress" style="margin-top:12px;">
-          <div class="fill" id="progressFill"></div>
-        </div>
-
-        <div class="muted" style="margin-top:10px;">We compress images so the app stays free. Admin approval required before a book becomes public.</div>
-      </form>
+<!-- POST MODAL -->
+<div class="modal-backdrop" id="postModal">
+  <div class="card dark">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-weight:800; font-size:1.05rem">Post a Book</div>
+      <div class="muted">All fields required</div>
     </div>
+
+    <form id="postForm" style="margin-top:12px;" onsubmit="return false;">
+      <div style="margin-top:8px;">
+        <label class="small">Title</label>
+        <input id="titleInput" type="text" placeholder="Book title" required/>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label class="small">Author</label>
+        <input id="authorInput" type="text" placeholder="Author name" required/>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label class="small">Condition</label>
+        <select id="conditionInput" required>
+          <option value="">-- choose condition --</option>
+          <option>Brand New (sealed)</option>
+          <option>Slightly Used</option>
+          <option>Used (good condition)</option>
+          <option>Old but usable</option>
+          <option>Damaged / Torn</option>
+        </select>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label class="small">Cover image (will be compressed)</label>
+        <input id="imageInput" type="file" accept="image/*" required/>
+        <div class="preview" id="imagePreview"></div>
+      </div>
+
+      <div class="progress" style="margin-top:12px;">
+        <div class="fill" id="progressFill"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button id="submitBook" class="btn primary" type="button"><i class="fa fa-paper-plane"></i> Submit & Request Approval</button>
+        <button id="cancelPost" class="btn" type="button"><i class="fa fa-times"></i> Cancel</button>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">We compress images so the app stays free. Admin approval required before a book becomes public.</div>
+    </form>
   </div>
+</div>
 
-  <!-- Loading overlay -->
-  <div class="loading" id="loadingOverlay">
-    <div class="loading box"><img src="https://i.ibb.co/6t4XkCk/loading.png" alt="loading" style="width:64px"></div>
-  </div>
+<!-- Loading overlay -->
+<div class="loading" id="loadingOverlay">
+  <div class="loading box"><img src="https://i.ibb.co/6t4XkCk/loading.png" alt="loading" style="width:64px"></div>
+</div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- Scripts -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script>
-  // ========== Config ==========
-  const ADMIN_WHATSAPP = "9821367407"; // admin approval redirect
-  const YOUTUBE_LINK = "https://youtube.com/@nsjagat-c";
+<script>
+const ADMIN_WHATSAPP = "9821367407";
+const YOUTUBE_LINK = "https://youtube.com/@nsjagat-c";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBf6_YDi0NrtKHY1O1Iul13S6JVEBjhGBg",
-    authDomain: "booknearme-c56c5.firebaseapp.com",
-    databaseURL: "https://booknearme-c56c5-default-rtdb.firebaseio.com",
-    projectId: "booknearme-c56c5",
-    storageBucket: "booknearme-c56c5.appspot.com",
-    messagingSenderId: "553907277180",
-    appId: "1:553907277180:web:0017e1daf136cd72cd68f9"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBf6_YDi0NrtKHY1O1Iul13S6JVEBjhGBg",
+  authDomain: "booknearme-c56c5.firebaseapp.com",
+  databaseURL: "https://book-nearme-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "booknearme-c56c5",
+  storageBucket: "booknearme-c56c5.appspot.com",
+  messagingSenderId: "553907277180",
+  appId: "1:553907277180:web:0017e1daf136cd72cd68f9"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-  // ========== UI refs ==========
-  const menuToggle = document.getElementById('menuToggle');
-  const sidebar = document.getElementById('sidebar');
-  const openPostBtn = document.getElementById('openPostBtn');
-  const subscribeBtn = document.getElementById('subscribeBtn');
-  const myLocBtn = document.getElementById('myLocBtn');
-  const themeBtn = document.getElementById('themeBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
+// UI references
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const openPostBtn = document.getElementById('openPostBtn');
+const subscribeBtn = document.getElementById('subscribeBtn');
+const myLocBtn = document.getElementById('myLocBtn');
+const themeBtn = document.getElementById('themeBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 
-  const authModal = document.getElementById('authModal');
-  const authSubmit = document.getElementById('authSubmit');
-  const authToggle = document.getElementById('authToggle');
-  const nameInput = document.getElementById('nameInput');
-  const emailInput = document.getElementById('emailInput');
-  const passInput = document.getElementById('passInput');
-  const waInput = document.getElementById('waInput');
+const authModal = document.getElementById('authModal');
+const authSubmit = document.getElementById('authSubmit');
+const authToggle = document.getElementById('authToggle');
+const nameInput = document.getElementById('nameInput');
+const emailInput = document.getElementById('emailInput');
+const passInput = document.getElementById('passInput');
+const waInput = document.getElementById('waInput');
 
-  const postModal = document.getElementById('postModal');
-  const imageInput = document.getElementById('imageInput');
-  const imagePreview = document.getElementById('imagePreview');
-  const titleInput = document.getElementById('titleInput');
-  const authorInput = document.getElementById('authorInput');
-  const conditionInput = document.getElementById('conditionInput');
-  const submitBookBtn = document.getElementById('submitBook');
-  const cancelPostBtn = document.getElementById('cancelPost');
-  const progressFill = document.getElementById('progressFill');
+const postModal = document.getElementById('postModal');
+const imageInput = document.getElementById('imageInput');
+const imagePreview = document.getElementById('imagePreview');
+const titleInput = document.getElementById('titleInput');
+const authorInput = document.getElementById('authorInput');
+const conditionInput = document.getElementById('conditionInput');
+const submitBookBtn = document.getElementById('submitBook');
+const cancelPostBtn = document.getElementById('cancelPost');
+const progressFill = document.getElementById('progressFill');
 
-  const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingOverlay = document.getElementById('loadingOverlay');
 
-  // ========== Map ==========
-  const map = L.map('map', { zoomControl: true }).setView([27.7000,85.3333], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  let markers = {}; // key -> marker object
+// ========== Map ==========
+const map = L.map('map', { zoomControl: true }).setView([27.7000,85.3333], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+let markers = {};
 
-  // ========== Helpers ==========
-  function toggleSidebar() { sidebar.classList.toggle('show'); }
-  menuToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleSidebar(); });
+// ========== Sidebar toggle ==========
+menuToggle.addEventListener('click', () => sidebar.classList.toggle('show'));
 
-  // Close sidebar on outside click (mobile fix)
-  document.addEventListener('click', (e) => {
-    const inside = sidebar.contains(e.target) || menuToggle.contains(e.target);
-    if(!inside) sidebar.classList.remove('show');
-  });
+// Only menu button closes sidebar
+// Remove auto-close on button click or outside click
+// Buttons still trigger their actions without closing sidebar
 
-  // close sidebar when a sidebar button is clicked (good for mobile)
-  [openPostBtn, subscribeBtn, myLocBtn, themeBtn, logoutBtn].forEach(btn => {
-    btn.addEventListener('click', () => { sidebar.classList.remove('show'); });
-  });
+// ========== Loading helpers ==========
+function showLoading(){ loadingOverlay.classList.add('show'); }
+function hideLoading(){ loadingOverlay.classList.remove('show'); }
 
-  function showLoading(){ loadingOverlay.classList.add('show'); }
-  function hideLoading(){ loadingOverlay.classList.remove('show'); }
-
-  // theme toggle
-  function setTheme(dark){
-    if(dark){ document.body.setAttribute('data-theme','dark'); sidebar.classList.add('dark'); document.querySelectorAll('.card').forEach(c=>c?.classList?.add('dark')); }
-    else { document.body.setAttribute('data-theme','light'); sidebar.classList.remove('dark'); document.querySelectorAll('.card').forEach(c=>c?.classList?.remove('dark')); }
+// ========== Theme toggle ==========
+function setTheme(dark){
+  if(dark){
+    document.body.setAttribute('data-theme','dark');
+    sidebar.classList.add('dark');
+    document.querySelectorAll('.card').forEach(c=>c?.classList?.add('dark'));
+  } else {
+    document.body.setAttribute('data-theme','light');
+    sidebar.classList.remove('dark');
+    document.querySelectorAll('.card').forEach(c=>c?.classList?.remove('dark'));
   }
-  setTheme(true);
+}
+setTheme(true);
+themeBtn.addEventListener('click', ()=> setTheme(document.body.getAttribute('data-theme')!=='dark'));
 
-  // ========== Auth logic (signup/login + verification polling) ==========
-  let authMode = 'signup'; // or 'login'
-  function setAuthMode(mode){
-    authMode = mode;
-    if(mode === 'login'){ authSubmit.innerHTML = '<i class="fa fa-sign-in-alt"></i> Login'; authToggle.innerText = "Switch to Signup"; nameInput.style.display = 'none'; waInput.style.display = 'none'; }
-    else { authSubmit.innerHTML = '<i class="fa fa-user-check"></i> Sign up'; authToggle.innerText = "Switch to Login"; nameInput.style.display = 'block'; waInput.style.display = 'block'; }
+// ========== Auth logic ==========
+let authMode = 'signup';
+function setAuthMode(mode){
+  authMode = mode;
+  if(mode==='login'){
+    authSubmit.innerHTML='<i class="fa fa-sign-in-alt"></i> Login';
+    authToggle.innerText="Switch to Signup";
+    nameInput.style.display='none'; waInput.style.display='none';
+  } else {
+    authSubmit.innerHTML='<i class="fa fa-user-check"></i> Sign up';
+    authToggle.innerText="Switch to Login";
+    nameInput.style.display='block'; waInput.style.display='block';
   }
-  setAuthMode('signup');
+}
+setAuthMode('signup');
+authToggle.addEventListener('click', ()=> setAuthMode(authMode==='signup'?'login':'signup'));
 
-  authToggle.addEventListener('click', () => setAuthMode(authMode === 'signup' ? 'login' : 'signup'));
+async function saveUserProfile(uid, name, email, whatsapp){
+  try{ await db.ref('users/' + uid).set({ name,email,whatsapp,createdAt:Date.now() }); }
+  catch(e){ console.warn("save profile err",e); }
+}
 
-  // helper to save user profile in DB
-  async function saveUserProfile(uid, name, email, whatsapp){
-    try {
-      await db.ref('users/' + uid).set({ name, email, whatsapp, createdAt: Date.now() });
-    } catch(e){ console.warn("save profile err", e); }
-  }
-
-  // submit auth
-  authSubmit.addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    const pass = passInput.value;
-    if(!email || !pass || pass.length < 6){ alert('Enter email and a password (min 6 chars).'); return; }
-
-    showLoading();
-    authSubmit.disabled = true;
-    try{
-      if(authMode === 'signup'){
-        const name = nameInput.value.trim() || 'User';
-        const wa = waInput.value.trim() || '';
-        const cred = await auth.createUserWithEmailAndPassword(email, pass);
-        await saveUserProfile(cred.user.uid, name, email, wa);
-        await cred.user.sendEmailVerification();
-        alert('Signup successful — verification email sent. Please verify then login.');
-      } else {
-        // login
-        const c = await auth.signInWithEmailAndPassword(email, pass);
-        // immediate check
-        await c.user.reload();
-        if(!c.user.emailVerified){
-          // start polling for verification (user may click link)
-          const want = confirm("Email not verified. Click OK after you verify in your mailbox (we'll check automatically).");
-          if(!want){ await auth.signOut(); hideLoading(); authSubmit.disabled = false; return; }
-          // poll every 3s for up to 60s
-          let attempts = 0, verified = false;
-          while(attempts < 20){
-            await c.user.reload();
-            if(c.user.emailVerified){ verified = true; break; }
-            attempts++; await new Promise(r=>setTimeout(r,3000));
-          }
-          if(!verified){ alert('Email still not verified. Please check your inbox.'); await auth.signOut(); hideLoading(); authSubmit.disabled = false; return; }
-        }
-        // logged in & verified
-        hideAuthModal();
-        watchBooksRealtime(); flyToUser();
-      }
-    } catch(err){
-      alert(err.message || 'Auth error');
-    } finally {
-      hideLoading();
-      authSubmit.disabled = false;
-    }
-  });
-
-  function showAuthModal(){ authModal.classList.add('show'); authModal.style.display = 'flex'; }
-  function hideAuthModal(){ authModal.classList.remove('show'); authModal.style.display = 'none'; }
-
-  // ========== Post form logic (preview, compress, upload as base64) ==========
-  let selectedFile = null;
-  imageInput.addEventListener('change', (e) => {
-    const f = e.target.files[0];
-    imagePreview.innerHTML = '';
-    selectedFile = null;
-    progressFill.style.width = '0%';
-    if(!f) return;
-    // show preview quickly
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(f);
-    img.alt = 'preview';
-    img.style.width = '140px'; img.style.height = '96px'; img.style.objectFit = 'cover'; img.style.borderRadius = '8px';
-    imagePreview.appendChild(img);
-    selectedFile = f;
-  });
-
-  submitBookBtn.addEventListener('click', async () => {
-    if(!auth.currentUser){ alert('Sign in first'); return; }
-    if(!auth.currentUser.emailVerified){ alert('Verify email to post'); return; }
-    const title = titleInput.value.trim();
-    const author = authorInput.value.trim();
-    const condition = conditionInput.value;
-    if(!title || !author || !condition){ alert('Fill title, author, condition'); return; }
-    if(!selectedFile){ alert('Select an image'); return; }
-
-    showLoading();
-    submitBookBtn.disabled = true;
-    try{
-      // compress
-      progressFill.style.width = '5%';
-      const opts = { maxSizeMB: 0.25, maxWidthOrHeight: 900, useWebWorker:true };
-      const compressed = await imageCompression(selectedFile, opts);
-      progressFill.style.width = '20%';
-
-      // convert to base64
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = rej;
-        r.readAsDataURL(compressed);
-      });
-      progressFill.style.width = '60%';
-
-      // get GPS
-      const pos = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:true, timeout:12000 });
-      });
-      const lat = pos.coords.latitude, lng = pos.coords.longitude;
-      progressFill.style.width = '75%';
-
-      // push to RTDB with approved=false
-      const pushRef = db.ref('books').push();
-      const payload = {
-        title, author, condition, image: b64, lat, lng,
-        postedBy: auth.currentUser.uid, approved: false, timestamp: Date.now()
-      };
-      await pushRef.set(payload);
-      progressFill.style.width = '95%';
-
-      // fetch user profile for message
-      const userSnap = await db.ref('users/' + auth.currentUser.uid).get();
-      const up = userSnap.exists() ? userSnap.val() : { name: auth.currentUser.email, email: auth.currentUser.email, whatsapp: '' };
-
-      // prepare full WhatsApp approval message (format B)
-      const msg = encodeURIComponent(
-        `Hello, I want to approve this book listing:%0A` +
-        `Book Name: ${title}%0A` +
-        `Author: ${author}%0A` +
-        `Condition: ${condition}%0A` +
-        `User Name: ${up.name || ''}%0A` +
-        `User Email: ${up.email || auth.currentUser.email}%0A` +
-        `User WhatsApp: ${up.whatsapp || ''}%0A` +
-        `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}%0A` +
-        `Book ID: ${pushRef.key}`
-      );
-      // open admin WhatsApp
-      window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${msg}`, '_blank');
-
-      // reset form
-      titleInput.value=''; authorInput.value=''; conditionInput.value=''; imageInput.value=''; imagePreview.innerHTML=''; selectedFile = null;
-      alert('Submitted for approval. You will be notified when approved.');
-    } catch(err){
-      alert('Post error: ' + (err.message || err));
-      console.error(err);
-    } finally {
-      submitBookBtn.disabled = false;
-      hideLoading();
-      progressFill.style.width = '0%';
-    }
-  });
-
-  cancelPostBtn.addEventListener('click', () => { hidePostModal(); });
-
-  function showPostModal(){ postModal.classList.add('show'); postModal.style.display = 'flex'; }
-  function hidePostModal(){ postModal.classList.remove('show'); postModal.style.display = 'none'; }
-
-  openPostBtn.addEventListener('click', () => {
-    if(!auth.currentUser){ alert('Sign in first to post'); showAuthModal(); return; }
-    if(!auth.currentUser.emailVerified){ alert('Verify your email before posting'); return; }
-    showPostModal();
-  });
-
-  // ========== Watch Realtime Books & Add markers (approved only) ==========
-  function clearMarkers(){
-    Object.keys(markers).forEach(k => { try{ map.removeLayer(markers[k]); } catch(e){} });
-    markers = {};
-  }
-
-  function addMarker(key, book){
-    if(!book.approved) return;
-    try{
-      const popup = document.createElement('div');
-      popup.className = 'popup-card';
-      popup.innerHTML = `
-        <div style="font-weight:700; font-size:15px">${escapeHtml(book.title)}</div>
-        <div style="font-size:13px; color:var(--muted)">${escapeHtml(book.author)} • ${escapeHtml(book.condition)}</div>
-        <img src="${book.image}" alt="cover" style="width:200px; height:130px; object-fit:cover; border-radius:8px; margin-top:8px;"/>
-      `;
-      // contact info: only for verified users
-      if(auth.currentUser && auth.currentUser.emailVerified){
-        // load seller profile
-        db.ref('users/' + (book.postedBy || '')).get().then(snap => {
-          const u = snap.exists() ? snap.val() : null;
-          const contact = document.createElement('div');
-          contact.style.marginTop = '8px';
-          if(u){
-            contact.innerHTML = `<div style="font-size:13px">Contact: <a href="https://wa.me/${u.whatsapp}" target="_blank">${escapeHtml(u.whatsapp)}</a> • ${escapeHtml(u.email)}</div>`;
-          } else {
-            contact.innerHTML = `<div style="font-size:13px; color:var(--muted)">(Seller contact not available)</div>`;
-          }
-          popup.appendChild(contact);
-          const m = L.marker([book.lat, book.lng]).addTo(map).bindPopup(popup);
-          markers[key] = m;
-        }).catch(()=> {
-          const m = L.marker([book.lat, book.lng]).addTo(map).bindPopup(popup);
-          markers[key] = m;
-        });
-      } else {
-        // show popup without contact
-        const note = document.createElement('div');
-        note.style.marginTop = '8px';
-        note.style.fontSize = '13px';
-        note.style.color = 'var(--muted)';
-        note.textContent = '(Verify email to see seller contact)';
-        popup.appendChild(note);
-        const m = L.marker([book.lat, book.lng]).addTo(map).bindPopup(popup);
-        markers[key] = m;
-      }
-    } catch(e){ console.error('marker err', e); }
-  }
-
-  function watchBooksRealtime(){
-    db.ref('books').on('value', snap => {
-      const val = snap.val() || {};
-      clearMarkers();
-      Object.keys(val).forEach(k => addMarker(k, val[k]));
-    });
-  }
-
-  // ========== Utility & UX ==========
-  function escapeHtml(s){ if(!s) return ''; return (s+"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  // subscribe
-  subscribeBtn.addEventListener('click', ()=> window.open(YOUTUBE_LINK, '_blank'));
-
-  // theme
-  themeBtn.addEventListener('click', ()=> {
-    const dark = document.body.getAttribute('data-theme') !== 'dark';
-    setTheme(dark);
-  });
-
-  // my location
-  myLocBtn.addEventListener('click', flyToUser);
-  function flyToUser(){
-    showLoading();
-    navigator.geolocation.getCurrentPosition(pos => {
-      const lat = pos.coords.latitude, lng = pos.coords.longitude;
-      map.flyTo([lat,lng], 15, {duration:1.0});
-      hideLoading();
-    }, err => { hideLoading(); alert('Location error: ' + err.message); }, { enableHighAccuracy:true, timeout:10000 });
-  }
-
-  // logout
-  logoutBtn.addEventListener('click', async () => {
-    await auth.signOut();
-    alert('Logged out');
-    // clear markers (require login/verify to see)
-    clearMarkers();
-    showAuthModal();
-  });
-
-  function showAuthModal(){ authModal.classList.add('show'); authModal.style.display = 'flex'; }
-  function hideAuthModal(){ authModal.classList.remove('show'); authModal.style.display = 'none'; }
-  function showPostModal(){ postModal.classList.add('show'); postModal.style.display = 'flex'; }
-  function hidePostModal(){ postModal.classList.remove('show'); postModal.style.display = 'none'; }
-
-  // auth state
-  auth.onAuthStateChanged(async user => {
-    if(user){
-      // reload to get fresh emailVerified state
-      await user.reload();
-      if(!user.emailVerified){
-        showAuthModal();
-        // optionally inform user to verify
-        console.log('User signed in but email not verified.');
-      } else {
-        hideAuthModal();
-        // ensure user profile exists in DB
-        try{
-          const userSnap = await db.ref('users/' + user.uid).get();
-          if(!userSnap.exists()){
-            await db.ref('users/' + user.uid).set({ name: user.displayName || user.email, email: user.email, whatsapp: '' , createdAt: Date.now() });
-          }
-        }catch(e){}
-        watchBooksRealtime();
-        flyToUser();
-      }
+authSubmit.addEventListener('click', async()=>{
+  const email = emailInput.value.trim();
+  const pass = passInput.value;
+  if(!email || !pass || pass.length<6){ alert('Enter valid email & password'); return; }
+  showLoading(); authSubmit.disabled=true;
+  try{
+    if(authMode==='signup'){
+      const name=nameInput.value.trim()||'User';
+      const wa=waInput.value.trim()||'';
+      const cred = await auth.createUserWithEmailAndPassword(email,pass);
+      await saveUserProfile(cred.user.uid,name,email,wa);
+      await cred.user.sendEmailVerification();
+      alert('Signup success. Verification email sent.');
     } else {
-      // no user
-      showAuthModal();
-      clearMarkers();
+      const c = await auth.signInWithEmailAndPassword(email,pass);
+      await c.user.reload();
+      if(!c.user.emailVerified){
+        const want=confirm("Email not verified. Click OK after verification.");
+        if(!want){ await auth.signOut(); hideLoading(); authSubmit.disabled=false; return; }
+        let attempts=0,verified=false;
+        while(attempts<20){
+          await c.user.reload();
+          if(c.user.emailVerified){ verified=true; break; }
+          attempts++; await new Promise(r=>setTimeout(r,3000));
+        }
+        if(!verified){ alert('Email still not verified'); await auth.signOut(); hideLoading(); authSubmit.disabled=false; return; }
+      }
+      hideAuthModal(); watchBooksRealtime(); flyToUser();
     }
+  } catch(err){ alert(err.message||'Auth error'); } finally{ hideLoading(); authSubmit.disabled=false; }
+});
+
+function showAuthModal(){ authModal.classList.add('show'); authModal.style.display='flex'; }
+function hideAuthModal(){ authModal.classList.remove('show'); authModal.style.display='none'; }
+
+// ========== Post logic ==========
+let selectedFile=null;
+imageInput.addEventListener('change', e=>{
+  const f=e.target.files[0]; imagePreview.innerHTML=''; selectedFile=null; progressFill.style.width='0%';
+  if(!f) return;
+  const img=document.createElement('img');
+  img.src=URL.createObjectURL(f); img.alt='preview'; img.style.width='140px'; img.style.height='96px'; img.style.objectFit='cover'; img.style.borderRadius='8px';
+  imagePreview.appendChild(img); selectedFile=f;
+});
+
+submitBookBtn.addEventListener('click', async()=>{
+  if(!auth.currentUser){ alert('Sign in first'); return; }
+  if(!auth.currentUser.emailVerified){ alert('Verify email'); return; }
+  const title=titleInput.value.trim();
+  const author=authorInput.value.trim();
+  const condition=conditionInput.value;
+  if(!title || !author || !condition){ alert('Fill all fields'); return; }
+  if(!selectedFile){ alert('Select an image'); return; }
+
+  showLoading(); submitBookBtn.disabled=true;
+  try{
+    progressFill.style.width='5%';
+    const opts={maxSizeMB:0.25,maxWidthOrHeight:900,useWebWorker:true};
+    const compressed = await imageCompression(selectedFile,opts);
+    progressFill.style.width='20%';
+
+    const b64 = await new Promise((res,rej)=>{
+      const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(compressed);
+    });
+    progressFill.style.width='60%';
+
+    const pos = await new Promise((resolve,reject)=>{
+      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:12000});
+    });
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    progressFill.style.width='75%';
+
+    const pushRef=db.ref('books').push();
+    const payload={ title,author,condition,image:b64,lat,lng,postedBy:auth.currentUser.uid,approved:false,timestamp:Date.now() };
+    await pushRef.set(payload);
+    progressFill.style.width='95%';
+
+    const userSnap = await db.ref('users/'+auth.currentUser.uid).get();
+    const up=userSnap.exists()?userSnap.val():{name:auth.currentUser.email,email:auth.currentUser.email,whatsapp:''};
+
+    const msg=encodeURIComponent(
+      `Hello, approve book:%0ABook: ${title}%0AAuthor: ${author}%0ACondition: ${condition}%0AUser: ${up.name || ''}%0AEmail: ${up.email}%0AWhatsApp: ${up.whatsapp || ''}%0ALocation: ${lat.toFixed(6)},${lng.toFixed(6)}%0AID: ${pushRef.key}`
+    );
+    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${msg}`,'_blank');
+
+    titleInput.value=''; authorInput.value=''; conditionInput.value=''; imageInput.value=''; imagePreview.innerHTML=''; selectedFile=null;
+    alert('Submitted for approval.');
+  } catch(err){ alert('Post error: '+(err.message||err)); console.error(err); }
+  finally{ submitBookBtn.disabled=false; hideLoading(); progressFill.style.width='0%'; }
+});
+
+cancelPostBtn.addEventListener('click', ()=> postModal.classList.remove('show'));
+
+// ========== Map markers ==========
+function escapeHtml(s){ if(!s) return ''; return (s+"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function clearMarkers(){ Object.keys(markers).forEach(k=>{ try{ map.removeLayer(markers[k]); }catch(e){} }); markers={}; }
+function addMarker(key,book){
+  if(!book.approved) return;
+  try{
+    const popup=document.createElement('div'); popup.className='popup-card';
+    popup.innerHTML=`<div style="font-weight:700; font-size:15px">${escapeHtml(book.title)}</div>
+                     <div style="font-size:13px; color:var(--muted)">${escapeHtml(book.author)} • ${escapeHtml(book.condition)}</div>
+                     <img src="${book.image}" alt="cover" style="width:200px;height:130px;object-fit:cover;border-radius:8px;margin-top:8px;"/>`;
+
+    if(auth.currentUser && auth.currentUser.emailVerified){
+      db.ref('users/'+(book.postedBy||'')).get().then(snap=>{
+        const u=snap.exists()?snap.val():null;
+        const contact=document.createElement('div'); contact.style.marginTop='8px';
+        contact.innerHTML = u?`<div style="font-size:13px">Contact: <a href="https://wa.me/${u.whatsapp}" target="_blank">${escapeHtml(u.whatsapp)}</a> • ${escapeHtml(u.email)}</div>`:
+                             `<div style="font-size:13px;color:var(--muted)">(Seller contact not available)</div>`;
+        popup.appendChild(contact);
+        markers[key]=L.marker([book.lat,book.lng]).addTo(map).bindPopup(popup);
+      }).catch(()=>{ markers[key]=L.marker([book.lat,book.lng]).addTo(map).bindPopup(popup); });
+    } else {
+      const note=document.createElement('div'); note.style.marginTop='8px'; note.style.fontSize='13px'; note.style.color='var(--muted)'; note.textContent='(Verify email to see seller contact)';
+      popup.appendChild(note);
+      markers[key]=L.marker([book.lat,book.lng]).addTo(map).bindPopup(popup);
+    }
+  } catch(e){ console.error('marker err',e); }
+}
+
+function watchBooksRealtime(){
+  db.ref('books').on('value',snap=>{
+    const val=snap.val()||{};
+    clearMarkers();
+    Object.keys(val).forEach(k=>addMarker(k,val[k]));
   });
+}
 
-  // make auth inputs "Enter" submit friendly
-  ['nameInput','emailInput','passInput','waInput'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('keydown', (ev) => { if(ev.key === 'Enter'){ authSubmit.click(); }});
-  });
+// ========== Misc buttons ==========
+subscribeBtn.addEventListener('click', ()=> window.open(YOUTUBE_LINK,'_blank'));
+myLocBtn.addEventListener('click', flyToUser);
+function flyToUser(){
+  showLoading();
+  navigator.geolocation.getCurrentPosition(pos=>{
+    map.flyTo([pos.coords.latitude,pos.coords.longitude],15,{duration:1.0}); hideLoading();
+  },err=>{ hideLoading(); alert('Location error: '+err.message);},{ enableHighAccuracy:true,timeout:10000 });
+}
 
-  // show/hide modals (attach to global buttons)
-  function hidePostModal(){ postModal.classList.remove('show'); postModal.style.display = 'none'; }
-  cancelPostBtn.addEventListener('click', hidePostModal);
+logoutBtn.addEventListener('click', async()=>{
+  await auth.signOut(); alert('Logged out'); clearMarkers(); showAuthModal();
+});
 
-  // open auth by default on load
-  showAuthModal();
+// ========== Auth state ==========
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    await user.reload();
+    if(!user.emailVerified){ showAuthModal(); console.log('Email not verified.'); }
+    else{ hideAuthModal();
+      try{ const snap=await db.ref('users/'+user.uid).get(); if(!snap.exists()){ await db.ref('users/'+user.uid).set({ name:user.displayName||user.email,email:user.email,whatsapp:'',createdAt:Date.now() }); }}catch(e){}
+      watchBooksRealtime(); flyToUser();
+    }
+  } else{ showAuthModal(); clearMarkers(); }
+});
 
-  // Close sidebar if a sidebar button clicked (already handles) - ensure mobile menu closure
-  Array.from(sidebar.querySelectorAll('button')).forEach(b=> b.addEventListener('click', ()=> sidebar.classList.remove('show')));
+// Enter key submits auth
+['nameInput','emailInput','passInput','waInput'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ authSubmit.click(); } });
+});
 
-  </script>
+// Open post modal
+openPostBtn.addEventListener('click', ()=>{
+  if(!auth.currentUser){ alert('Sign in first'); showAuthModal(); return; }
+  if(!auth.currentUser.emailVerified){ alert('Verify email before posting'); return; }
+  postModal.classList.add('show'); postModal.style.display='flex';
+});
+</script>
 </body>
 </html>
